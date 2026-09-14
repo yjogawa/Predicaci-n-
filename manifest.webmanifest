@@ -1,0 +1,9 @@
+{
+  "name":"奉仕時間記録",
+  "short_name":"奉仕時間",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f2f2f7",
+  "theme_color":"#ffffff",
+  "icons":[]
+}
