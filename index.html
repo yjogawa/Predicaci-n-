@@ -37,7 +37,7 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 <button class="btn light arrow" id="prev">‹</button><div class="month" id="month"></div><button class="btn light arrow" id="next">›</button>
 </div></div>
 
-<div class="card total"><small>今月の奉仕時間</small><strong id="total">0:00</strong><div class="sub" id="stats">再訪問・研究はメモで記録</div><div class="sub" id="count">0日記録</div></div>
+<div class="card total"><small>今月の奉仕時間（繰越込み）</small><strong id="total">0:00</strong><div class="sub" id="carryInfo">前月からの繰越 0:00 ／ 次月へ繰越 0:00</div><div class="sub" id="actualInfo">今月の実績 0:00</div><div class="sub" id="stats">再訪問・研究はメモで記録</div><div class="sub" id="count">0日記録</div></div>
 
 <div class="card"><div class="section">奉仕を記録</div><div class="form">
 <div><label for="date">日付</label><input id="date" type="date"></div>
@@ -45,7 +45,7 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 <div style="grid-column:1/-1"><label for="rvNote">再訪問メモ（誰と・何を話したか）</label><textarea id="rvNote" rows="3" placeholder="例：田中さんと、家族の悩みについて話した。"></textarea></div>
 <div style="grid-column:1/-1"><label for="bibleNote">研究メモ（誰と・何を話したか）</label><textarea id="bibleNote" rows="3" placeholder="例：佐藤さんと第12課を研究した。祈りについて話した。"></textarea></div>
 <button class="btn add" id="add">記録する</button>
-</div><div class="msg" id="msg"></div><div class="note">iPhoneでは数字キーボードだけで入力できます。「2時間」「30分」のように入力してください。分は0〜59です。再訪問と研究は「誰と・何を話したか」をメモできます。</div></div>
+</div><div class="msg" id="msg"></div><div class="note">iPhoneでは数字キーボードだけで入力できます。「2時間」「30分」のように入力してください。分は0〜59です。再訪問と研究は「誰と・何を話したか」をメモできます。1時間未満の端数は次月へ繰り越します。</div></div>
 
 <div class="card"><div class="section">今月の記録</div><div id="records"></div></div>
 
@@ -59,7 +59,7 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 
 <main id="annualView" class="hidden">
 <div class="card"><div class="section">年間集計</div><div class="fy" id="annualFY"></div>
-<table><thead><tr><th>月</th><th>奉仕時間</th></tr></thead><tbody id="annualRows"></tbody><tfoot><tr><td>年間合計</td><td id="annualTotal">0:00</td></tr></tfoot></table></div>
+<table><thead><tr><th>月</th><th>実績</th><th>繰越込み</th><th>次月繰越</th></tr></thead><tbody id="annualRows"></tbody><tfoot><tr><td colspan="3">年間実績</td><td id="annualTotal">0:00</td></tr></tfoot></table><div class="note">各月の実績のうち1時間未満の端数を次月へ繰り越します。繰越は実績時間に二重計上されません。</div></div>
 <button class="btn" style="width:100%" id="back">月別画面に戻る</button>
 </main>
 </div>
@@ -89,12 +89,27 @@ function parse(v){const m=v.trim().match(/^(\d+):([0-5]\d)$/);return m?Number(m[
 function fmt(n){return Math.floor(n/60)+":"+String(n%60).padStart(2,"0")}
 function flash(t){const e=document.getElementById("msg");e.textContent=t;setTimeout(()=>e.textContent="",1800)}
 function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;")}
+function monthlyInfo(i){
+ let carry=0;
+ for(let j=0;j<i;j++){
+  const list=state.records[key(j)]||[];
+  const actual=list.reduce((s,r)=>s+r.minutes,0);
+  carry=(carry+actual)%60;
+ }
+ const list=state.records[key(i)]||[];
+ const actual=list.reduce((s,r)=>s+r.minutes,0);
+ const withCarry=carry+actual;
+ return {actual,carry,total:withCarry,nextCarry:withCarry%60,whole:Math.floor(withCarry/60)*60};
+}
 function render(){
  const k=key(state.page), list=(state.records[k]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
  document.getElementById("fy").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
  document.getElementById("month").textContent=Number(k.slice(5))+"月";
- const total=list.reduce((s,r)=>s+r.minutes,0);
- document.getElementById("total").textContent=fmt(total);document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
+ const info=monthlyInfo(state.page);
+ document.getElementById("total").textContent=fmt(info.total);
+ document.getElementById("carryInfo").textContent=`前月からの繰越 ${fmt(info.carry)} ／ 次月へ繰越 ${fmt(info.nextCarry)}`;
+ document.getElementById("actualInfo").textContent=`今月の実績 ${fmt(info.actual)} ／ 1時間単位の時間 ${fmt(info.whole)}`;
+ document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
  document.getElementById("date").value=k+"-01";document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
  document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><button class="del" data-id="${r.id}">削除</button><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
  document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
@@ -116,7 +131,7 @@ document.getElementById("next").onclick=()=>{if(state.page<11){state.page++;rend
 document.getElementById("annual").onclick=()=>{
  document.getElementById("monthView").classList.add("hidden");document.getElementById("annualView").classList.remove("hidden");
  document.getElementById("annualFY").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
- let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const list=state.records[key(i)]||[];const t=list.reduce((s,r)=>s+r.minutes,0);total+=t;return `<tr><td>${m}月</td><td>${fmt(t)}</td></tr>`}).join("");
+ let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const info=monthlyInfo(i);total+=info.actual;return `<tr><td>${m}月</td><td>${fmt(info.actual)}</td><td>${fmt(info.total)}</td><td>${fmt(info.nextCarry)}</td></tr>`}).join("");
  document.getElementById("annualTotal").textContent=fmt(total)
 };
 document.getElementById("back").onclick=()=>{document.getElementById("annualView").classList.add("hidden");document.getElementById("monthView").classList.remove("hidden");render()};
