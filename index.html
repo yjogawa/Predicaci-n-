@@ -110,7 +110,10 @@ function render(){
  document.getElementById("carryInfo").textContent=`前月からの繰越 ${fmt(info.carry)} ／ 次月へ繰越 ${fmt(info.nextCarry)}`;
  document.getElementById("actualInfo").textContent=`今月の実績 ${fmt(info.actual)} ／ 1時間単位の時間 ${fmt(info.whole)}`;
  document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
- document.getElementById("date").value=k+"-01";document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
+ const today=new Date();
+ const todayKey=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
+ document.getElementById("date").value=(todayKey===k)?today.toISOString().slice(0,10):k+"-01";
+ document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
  document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><button class="del" data-id="${r.id}">削除</button><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
  document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
 }
@@ -151,7 +154,16 @@ document.getElementById("file").onchange=e=>{
 document.getElementById("clear").onclick=()=>{
  if(confirm("すべての奉仕記録を消去します。この操作は元に戻せません。")){state.records={};save();render();flash("すべての記録を消去しました")}
 };
-load();render();
+load();
+// 起動時は現在の奉仕年度の「今月」を表示する
+const now=new Date();
+const currentFyStart=(now.getMonth()>=8?now.getFullYear():now.getFullYear()-1);
+if(state.fyStart===currentFyStart){
+ const currentMonth=now.getMonth()+1;
+ const idx=months.indexOf(currentMonth);
+ if(idx>=0)state.page=idx;
+}
+render();
 </script>
 </body>
 </html>
