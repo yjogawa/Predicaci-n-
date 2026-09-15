@@ -18,9 +18,9 @@
 .nav{display:flex;align-items:center;justify-content:space-between}.arrow{width:46px;height:44px;padding:0;font-size:26px}.month{font-size:25px;font-weight:800;text-align:center}.fy{font-size:13px;color:#777;text-align:center;margin-bottom:5px}
 .total{text-align:center}.total small{display:block;color:#777}.total strong{font-size:42px;display:block}.sub{color:#777;font-size:13px}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;color:#666;font-size:13px;margin-bottom:5px}
-input{width:100%;border:1px solid #d8d8dc;border-radius:11px;padding:12px;font-size:17px;background:#fff}.add{grid-column:1/-1;width:100%;padding:13px}
+input,textarea{width:100%;border:1px solid #d8d8dc;border-radius:11px;padding:12px;font-size:17px;background:#fff;font-family:inherit}textarea{min-height:82px;resize:vertical;line-height:1.45}.time-parts{display:flex;align-items:center;gap:5px}.time-parts input{width:72px;text-align:center}.time-parts span{font-size:14px;color:#555;white-space:nowrap}.add{grid-column:1/-1;width:100%;padding:13px}
 .msg{min-height:20px;color:#16803c;font-weight:700;font-size:14px;margin-top:8px}.note{font-size:12px;color:#777;line-height:1.5;margin-top:8px}
-.row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;padding:13px 2px;border-bottom:1px solid #eee}.row:last-child{border:0}.time{font-weight:700}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:13px 2px;border-bottom:1px solid #eee}.row:last-child{border:0}.time{font-weight:700}.record-notes{grid-column:1/-1;margin-top:2px;font-size:14px;line-height:1.5}.record-note{margin-top:7px;padding:8px 10px;background:#f7f7f9;border-radius:9px}.record-note strong{font-size:12px;color:#666;display:block;margin-bottom:2px}
 .del{background:#eee;color:#c62828;border:0;border-radius:9px;padding:7px 9px}.empty{color:#888;text-align:center;padding:10px}
 .section{font-weight:800;margin-bottom:10px}table{width:100%;border-collapse:collapse}th,td{padding:10px 3px;border-bottom:1px solid #eee;text-align:right}th:first-child,td:first-child{text-align:left}
 tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:grid;gap:9px}.backup .btn{width:100%}
@@ -37,13 +37,15 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 <button class="btn light arrow" id="prev">‹</button><div class="month" id="month"></div><button class="btn light arrow" id="next">›</button>
 </div></div>
 
-<div class="card total"><small>今月の奉仕時間</small><strong id="total">0:00</strong><div class="sub" id="count">0件</div></div>
+<div class="card total"><small>今月の奉仕時間</small><strong id="total">0:00</strong><div class="sub" id="stats">再訪問・研究はメモで記録</div><div class="sub" id="count">0日記録</div></div>
 
 <div class="card"><div class="section">奉仕を記録</div><div class="form">
 <div><label for="date">日付</label><input id="date" type="date"></div>
-<div><label for="time">時間（例 2:30）</label><input id="time" type="text" inputmode="numeric" placeholder="2:30" autocomplete="off"></div>
+<div class="time-input"><label>奉仕時間</label><div class="time-parts"><input id="hours" type="number" inputmode="numeric" min="0" step="1" placeholder="2" aria-label="時間"><span>時間</span><input id="minutesPart" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="30" aria-label="分"><span>分</span></div></div>
+<div style="grid-column:1/-1"><label for="rvNote">再訪問メモ（誰と・何を話したか）</label><textarea id="rvNote" rows="3" placeholder="例：田中さんと、家族の悩みについて話した。"></textarea></div>
+<div style="grid-column:1/-1"><label for="bibleNote">研究メモ（誰と・何を話したか）</label><textarea id="bibleNote" rows="3" placeholder="例：佐藤さんと第12課を研究した。祈りについて話した。"></textarea></div>
 <button class="btn add" id="add">記録する</button>
-</div><div class="msg" id="msg"></div><div class="note">「2:30」＝2時間30分。「0:45」＝45分として保存します。</div></div>
+</div><div class="msg" id="msg"></div><div class="note">iPhoneでは数字キーボードだけで入力できます。「2時間」「30分」のように入力してください。分は0〜59です。再訪問と研究は「誰と・何を話したか」をメモできます。</div></div>
 
 <div class="card"><div class="section">今月の記録</div><div id="records"></div></div>
 
@@ -63,32 +65,50 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 </div>
 
 <script>
-const STORE="service_hours_app_v3";
+const STORE="service_hours_app_v4";
 const months=[9,10,11,12,1,2,3,4,5,6,7,8];
 let state={fyStart:(new Date().getMonth()>=8?new Date().getFullYear():new Date().getFullYear()-1),records:{},page:0};
 
-function load(){try{const x=localStorage.getItem(STORE);if(x)state=Object.assign(state,JSON.parse(x));}catch(e){}}
+function load(){
+ try{
+  const x=localStorage.getItem(STORE);
+  if(x)state=Object.assign(state,JSON.parse(x));
+  else{
+   const old=localStorage.getItem("service_hours_app_v3");
+   if(old){state=Object.assign(state,JSON.parse(old));save();}
+  }
+  Object.values(state.records||{}).forEach(list=>list.forEach(r=>{
+   r.rvNote=typeof r.rvNote==='string'?r.rvNote:'';
+   r.bibleNote=typeof r.bibleNote==='string'?r.bibleNote:'';
+  }));
+ }catch(e){}
+}
 function save(){try{localStorage.setItem(STORE,JSON.stringify(state));return true}catch(e){return false}}
 function key(i){const m=months[i],y=i<4?state.fyStart:state.fyStart+1;return y+"-"+String(m).padStart(2,"0")}
 function parse(v){const m=v.trim().match(/^(\d+):([0-5]\d)$/);return m?Number(m[1])*60+Number(m[2]):null}
 function fmt(n){return Math.floor(n/60)+":"+String(n%60).padStart(2,"0")}
 function flash(t){const e=document.getElementById("msg");e.textContent=t;setTimeout(()=>e.textContent="",1800)}
+function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;")}
 function render(){
  const k=key(state.page), list=(state.records[k]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
  document.getElementById("fy").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
  document.getElementById("month").textContent=Number(k.slice(5))+"月";
  const total=list.reduce((s,r)=>s+r.minutes,0);
- document.getElementById("total").textContent=fmt(total);document.getElementById("count").textContent=list.length+"件";
- document.getElementById("date").value=k+"-01";
- document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div>${r.date.slice(5).replace("-","/")}</div><div class="time">${fmt(r.minutes)}</div><button class="del" data-id="${r.id}">削除</button></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
+ document.getElementById("total").textContent=fmt(total);document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
+ document.getElementById("date").value=k+"-01";document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
+ document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><button class="del" data-id="${r.id}">削除</button><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
  document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
 }
 document.getElementById("add").onclick=()=>{
- const date=document.getElementById("date").value, minutes=parse(document.getElementById("time").value);
- if(!date||minutes===null){flash("時間は 2:30 の形式で入力してください");return}
+ const date=document.getElementById("date").value;
+ const h=document.getElementById("hours").value.trim(), m=document.getElementById("minutesPart").value.trim();
+ const hours=h===""?null:Number(h), mins=m===""?null:Number(m);
+ const minutes=(Number.isInteger(hours)&&hours>=0&&Number.isInteger(mins)&&mins>=0&&mins<=59)?hours*60+mins:null;
+ const rvNote=document.getElementById("rvNote").value.trim(), bibleNote=document.getElementById("bibleNote").value.trim();
+ if(!date||minutes===null){flash("奉仕時間は「時間」と「分」を入力してください（分は0〜59）");return}
  const k=key(state.page);if(date.slice(0,7)!==k){flash("表示中の月の日付を選んでください");return}
- if(!state.records[k])state.records[k]=[];state.records[k].push({id:Date.now()+Math.random(),date,minutes});
- if(save()){document.getElementById("time").value="";render();flash("✓ 保存しました")}else flash("保存できませんでした")
+ if(!state.records[k])state.records[k]=[];state.records[k].push({id:Date.now()+Math.random(),date,minutes,rvNote,bibleNote});
+ if(save()){document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";render();flash("✓ 保存しました")}else flash("保存できませんでした")
 };
 document.getElementById("prev").onclick=()=>{if(state.page>0){state.page--;render()}};
 document.getElementById("next").onclick=()=>{if(state.page<11){state.page++;render()}};
@@ -96,25 +116,25 @@ document.getElementById("next").onclick=()=>{if(state.page<11){state.page++;rend
 document.getElementById("annual").onclick=()=>{
  document.getElementById("monthView").classList.add("hidden");document.getElementById("annualView").classList.remove("hidden");
  document.getElementById("annualFY").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
- let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const t=(state.records[key(i)]||[]).reduce((s,r)=>s+r.minutes,0);total+=t;return `<tr><td>${m}月</td><td>${fmt(t)}</td></tr>`}).join("");
+ let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const list=state.records[key(i)]||[];const t=list.reduce((s,r)=>s+r.minutes,0);total+=t;return `<tr><td>${m}月</td><td>${fmt(t)}</td></tr>`}).join("");
  document.getElementById("annualTotal").textContent=fmt(total)
 };
 document.getElementById("back").onclick=()=>{document.getElementById("annualView").classList.add("hidden");document.getElementById("monthView").classList.remove("hidden");render()};
 
 document.getElementById("backup").onclick=()=>{
- const blob=new Blob([JSON.stringify({app:"奉仕時間記録",version:3,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`奉仕時間バックアップ_${state.fyStart}-${state.fyStart+1}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash("バックアップを作成しました")
+ const blob=new Blob([JSON.stringify({app:"奉仕時間記録",version:5,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`奉仕記録バックアップ_${state.fyStart}-${state.fyStart+1}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash("バックアップを作成しました")
 };
 document.getElementById("restore").onclick=()=>document.getElementById("file").click();
 document.getElementById("file").onchange=e=>{
  const f=e.target.files[0];if(!f)return;const reader=new FileReader();
  reader.onload=()=>{
-  try{const x=JSON.parse(reader.result);const d=x.data||x;if(!d.records)throw new Error();if(!confirm("現在のデータをバックアップの内容で置き換えます。よろしいですか？"))return;state=d;save();render();flash("✓ 復元しました")}catch(err){alert("バックアップファイルを読み込めませんでした。")}
+  try{const x=JSON.parse(reader.result);const d=x.data||x;if(!d.records)throw new Error();if(!confirm("現在のデータをバックアップの内容で置き換えます。よろしいですか？"))return;state=d;Object.values(state.records||{}).forEach(list=>list.forEach(r=>{r.rvNote=typeof r.rvNote==='string'?r.rvNote:'';r.bibleNote=typeof r.bibleNote==='string'?r.bibleNote:'';}));save();render();flash("✓ 復元しました")}catch(err){alert("バックアップファイルを読み込めませんでした。")}
   e.target.value=""
  };reader.readAsText(f)
 };
 document.getElementById("clear").onclick=()=>{
- if(confirm("すべての奉仕時間記録を消去します。この操作は元に戻せません。")){state.records={};save();render();flash("すべて消去しました")}
+ if(confirm("すべての奉仕記録を消去します。この操作は元に戻せません。")){state.records={};save();render();flash("すべての記録を消去しました")}
 };
 load();render();
 </script>
