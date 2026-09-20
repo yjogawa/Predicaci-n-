@@ -21,7 +21,7 @@
 input,textarea{width:100%;border:1px solid #d8d8dc;border-radius:11px;padding:12px;font-size:17px;background:#fff;font-family:inherit}textarea{min-height:82px;resize:vertical;line-height:1.45}.time-parts{display:flex;align-items:center;gap:5px}.time-parts input{width:72px;text-align:center}.time-parts span{font-size:14px;color:#555;white-space:nowrap}.add{grid-column:1/-1;width:100%;padding:13px}
 .msg{min-height:20px;color:#16803c;font-weight:700;font-size:14px;margin-top:8px}.note{font-size:12px;color:#777;line-height:1.5;margin-top:8px}
 .row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:13px 2px;border-bottom:1px solid #eee}.row:last-child{border:0}.time{font-weight:700}.record-notes{grid-column:1/-1;margin-top:2px;font-size:14px;line-height:1.5}.record-note{margin-top:7px;padding:8px 10px;background:#f7f7f9;border-radius:9px}.record-note strong{font-size:12px;color:#666;display:block;margin-bottom:2px}
-.del{background:#eee;color:#c62828;border:0;border-radius:9px;padding:7px 9px}.empty{color:#888;text-align:center;padding:10px}
+.del{background:#eee;color:#c62828;border:0;border-radius:9px;padding:7px 9px}.edit{background:#e5e5ea;color:#1d1d1f;border:0;border-radius:9px;padding:7px 9px}.actions{display:flex;gap:6px;align-items:center}.cancel{grid-column:1/-1;width:100%;padding:11px}.empty{color:#888;text-align:center;padding:10px}
 .section{font-weight:800;margin-bottom:10px}table{width:100%;border-collapse:collapse}th,td{padding:10px 3px;border-bottom:1px solid #eee;text-align:right}th:first-child,td:first-child{text-align:left}
 tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:grid;gap:9px}.backup .btn{width:100%}
 .status{font-size:13px;color:#666;margin-top:8px;line-height:1.45}
@@ -44,7 +44,7 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 <div class="time-input"><label>奉仕時間</label><div class="time-parts"><input id="hours" type="number" inputmode="numeric" min="0" step="1" placeholder="2" aria-label="時間"><span>時間</span><input id="minutesPart" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="30" aria-label="分"><span>分</span></div></div>
 <div style="grid-column:1/-1"><label for="rvNote">再訪問メモ（誰と・何を話したか）</label><textarea id="rvNote" rows="3" placeholder="例：田中さんと、家族の悩みについて話した。"></textarea></div>
 <div style="grid-column:1/-1"><label for="bibleNote">研究メモ（誰と・何を話したか）</label><textarea id="bibleNote" rows="3" placeholder="例：佐藤さんと第12課を研究した。祈りについて話した。"></textarea></div>
-<button class="btn add" id="add">記録する</button>
+<button class="btn add" id="add">記録する</button><button class="btn light cancel hidden" id="cancelEdit">編集をキャンセル</button>
 </div><div class="msg" id="msg"></div><div class="note">iPhoneでは数字キーボードだけで入力できます。「2時間」「30分」のように入力してください。分は0〜59です。再訪問と研究は「誰と・何を話したか」をメモできます。1時間未満の端数は次月へ繰り越します。</div></div>
 
 <div class="card"><div class="section">今月の記録</div><div id="records"></div></div>
@@ -65,8 +65,9 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 </div>
 
 <script>
-const STORE="service_hours_app_v4";
+const STORE="service_hours_app_v5";
 const months=[9,10,11,12,1,2,3,4,5,6,7,8];
+let editId=null;
 let state={fyStart:(new Date().getMonth()>=8?new Date().getFullYear():new Date().getFullYear()-1),records:{},page:0};
 
 function load(){
@@ -74,7 +75,7 @@ function load(){
   const x=localStorage.getItem(STORE);
   if(x)state=Object.assign(state,JSON.parse(x));
   else{
-   const old=localStorage.getItem("service_hours_app_v3");
+   const old=localStorage.getItem("service_hours_app_v4")||localStorage.getItem("service_hours_app_v3");
    if(old){state=Object.assign(state,JSON.parse(old));save();}
   }
   Object.values(state.records||{}).forEach(list=>list.forEach(r=>{
@@ -112,10 +113,29 @@ function render(){
  document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
  const today=new Date();
  const todayKey=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
- document.getElementById("date").value=(todayKey===k)?today.toISOString().slice(0,10):k+"-01";
- document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
- document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><button class="del" data-id="${r.id}">削除</button><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
- document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
+ if(!editId){
+  document.getElementById("date").value=(todayKey===k)?today.toISOString().slice(0,10):k+"-01";
+  document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
+  document.getElementById("add").textContent="記録する";
+  document.getElementById("cancelEdit").classList.add("hidden");
+ }
+ document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><div class="actions"><button class="edit" data-id="${r.id}">編集</button><button class="del" data-id="${r.id}">削除</button></div><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
+ document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(editId===b.dataset.id){editId=null;}state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
+ document.querySelectorAll(".edit").forEach(b=>b.onclick=()=>startEdit(b.dataset.id));
+}
+function startEdit(id){
+ const k=key(state.page), r=(state.records[k]||[]).find(x=>String(x.id)===String(id));
+ if(!r)return;
+ editId=String(id);
+ document.getElementById("date").value=r.date;
+ document.getElementById("hours").value=Math.floor(r.minutes/60);
+ document.getElementById("minutesPart").value=r.minutes%60;
+ document.getElementById("rvNote").value=r.rvNote||"";
+ document.getElementById("bibleNote").value=r.bibleNote||"";
+ document.getElementById("add").textContent="変更を保存";
+ document.getElementById("cancelEdit").classList.remove("hidden");
+ document.getElementById("msg").textContent="編集モード：内容を変更して「変更を保存」を押してください";
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 document.getElementById("add").onclick=()=>{
  const date=document.getElementById("date").value;
@@ -125,9 +145,23 @@ document.getElementById("add").onclick=()=>{
  const rvNote=document.getElementById("rvNote").value.trim(), bibleNote=document.getElementById("bibleNote").value.trim();
  if(!date||minutes===null){flash("奉仕時間は「時間」と「分」を入力してください（分は0〜59）");return}
  const k=key(state.page);if(date.slice(0,7)!==k){flash("表示中の月の日付を選んでください");return}
- if(!state.records[k])state.records[k]=[];state.records[k].push({id:Date.now()+Math.random(),date,minutes,rvNote,bibleNote});
- if(save()){document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";render();flash("✓ 保存しました")}else flash("保存できませんでした")
+ if(editId){
+   const r=(state.records[k]||[]).find(x=>String(x.id)===String(editId));
+   if(!r){editId=null;render();return}
+   r.date=date;r.minutes=minutes;r.rvNote=rvNote;r.bibleNote=bibleNote;
+   if(save()){editId=null;render();flash("✓ 変更を保存しました")}else flash("保存できませんでした")
+ }else{
+   if(!state.records[k])state.records[k]=[];
+   state.records[k].push({id:Date.now()+Math.random(),date,minutes,rvNote,bibleNote});
+   if(save()){document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";render();flash("✓ 保存しました")}else flash("保存できませんでした")
+ }
 };
+document.getElementById("cancelEdit").onclick=()=>{
+ editId=null;
+ render();
+ flash("編集をキャンセルしました");
+};
+
 document.getElementById("prev").onclick=()=>{if(state.page>0){state.page--;render()}};
 document.getElementById("next").onclick=()=>{if(state.page<11){state.page++;render()}};
 
@@ -140,7 +174,7 @@ document.getElementById("annual").onclick=()=>{
 document.getElementById("back").onclick=()=>{document.getElementById("annualView").classList.add("hidden");document.getElementById("monthView").classList.remove("hidden");render()};
 
 document.getElementById("backup").onclick=()=>{
- const blob=new Blob([JSON.stringify({app:"奉仕時間記録",version:5,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
+ const blob=new Blob([JSON.stringify({app:"奉仕時間記録",version:6,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`奉仕記録バックアップ_${state.fyStart}-${state.fyStart+1}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash("バックアップを作成しました")
 };
 document.getElementById("restore").onclick=()=>document.getElementById("file").click();
