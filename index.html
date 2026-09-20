@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="ja">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="奉仕時間">
+<meta name="apple-mobile-web-app-title" content="Horas de servicio">
 <link rel="manifest" href="manifest.webmanifest">
-<title>奉仕時間記録</title>
+<title>Registro de horas de servicio</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f2f2f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .app{max-width:680px;margin:auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom))}
@@ -30,37 +30,37 @@ tfoot td{font-weight:800;font-size:17px}.hidden{display:none}.backup{display:gri
 </head>
 <body>
 <div class="app">
-<div class="top"><div class="title">奉仕時間記録</div><button class="btn" id="annual">年間集計</button></div>
+<div class="top"><div class="title" id="appTitle">Horas de servicio</div><div style="display:flex;gap:6px"><button class="btn light" id="langBtn">日本語</button><button class="btn" id="annual">Resumen anual</button></div></div>
 
 <main id="monthView">
 <div class="card"><div class="fy" id="fy"></div><div class="nav">
 <button class="btn light arrow" id="prev">‹</button><div class="month" id="month"></div><button class="btn light arrow" id="next">›</button>
 </div></div>
 
-<div class="card total"><small>今月の奉仕時間（繰越込み）</small><strong id="total">0:00</strong><div class="sub" id="carryInfo">前月からの繰越 0:00 ／ 次月へ繰越 0:00</div><div class="sub" id="actualInfo">今月の実績 0:00</div><div class="sub" id="stats">再訪問・研究はメモで記録</div><div class="sub" id="count">0日記録</div></div>
+<div class="card total"><small>Horas de servicio de este mes (con saldo trasladado)</small><strong id="total">0:00</strong><div class="sub" id="carryInfo">Saldo trasladado del mes anterior 0:00 ／ Saldo para el mes siguiente 0:00</div><div class="sub" id="actualInfo">Horas registradas este mes 0:00</div><div class="sub" id="stats">Las revisitas y los cursos bíblicos se registran en las notas</div><div class="sub" id="count">0días registrados</div></div>
 
-<div class="card"><div class="section">奉仕を記録</div><div class="form">
-<div><label for="date">日付</label><input id="date" type="date"></div>
-<div class="time-input"><label>奉仕時間</label><div class="time-parts"><input id="hours" type="number" inputmode="numeric" min="0" step="1" placeholder="2" aria-label="時間"><span>時間</span><input id="minutesPart" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="30" aria-label="分"><span>分</span></div></div>
-<div style="grid-column:1/-1"><label for="rvNote">再訪問メモ（誰と・何を話したか）</label><textarea id="rvNote" rows="3" placeholder="例：田中さんと、家族の悩みについて話した。"></textarea></div>
-<div style="grid-column:1/-1"><label for="bibleNote">研究メモ（誰と・何を話したか）</label><textarea id="bibleNote" rows="3" placeholder="例：佐藤さんと第12課を研究した。祈りについて話した。"></textarea></div>
-<button class="btn add" id="add">記録する</button><button class="btn light cancel hidden" id="cancelEdit">編集をキャンセル</button>
-</div><div class="msg" id="msg"></div><div class="note">iPhoneでは数字キーボードだけで入力できます。「2時間」「30分」のように入力してください。分は0〜59です。再訪問と研究は「誰と・何を話したか」をメモできます。1時間未満の端数は次月へ繰り越します。</div></div>
+<div class="card"><div class="section">Registrar servicio</div><div class="form">
+<div><label for="date">Fecha</label><input id="date" type="date"></div>
+<div class="time-input"><label>Horas de servicio</label><div class="time-parts"><input id="hours" type="number" inputmode="numeric" min="0" step="1" placeholder="2" aria-label="horas"><span>horas</span><input id="minutesPart" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="30" aria-label="minutos"><span>minutos</span></div></div>
+<div style="grid-column:1/-1"><label for="rvNote">Nota de revisita (con quién y de qué hablaron)</label><textarea id="rvNote" rows="3" placeholder="Ej.: Hablé con el Sr. Tanaka sobre sus preocupaciones familiares."></textarea></div>
+<div style="grid-column:1/-1"><label for="bibleNote">Nota del curso bíblico (con quién y de qué hablaron)</label><textarea id="bibleNote" rows="3" placeholder="Ej.: Estudié la lección 12 con el Sr. Sato. Hablamos sobre la oración."></textarea></div>
+<button class="btn add" id="add">Registrar</button><button class="btn light cancel hidden" id="cancelEdit">Cancelar edición</button>
+</div><div class="msg" id="msg"></div><div class="note">En el iPhone puede usar solo el teclado numérico. Introduzca, por ejemplo, 2 horas y 30 minutos. Las revisitas y los cursos bíblicos permiten anotar con quién habló y de qué hablaron. Los minutos que queden por debajo de una hora se trasladan al mes siguiente.</div></div>
 
-<div class="card"><div class="section">今月の記録</div><div id="records"></div></div>
+<div class="card"><div class="section">Registros de este mes</div><div id="records"></div></div>
 
-<div class="card"><div class="section">データ管理</div><div class="backup">
-<button class="btn light" id="backup">バックアップを保存</button>
-<button class="btn light" id="restore">バックアップから復元</button>
-<button class="btn light" id="clear">全データを消去</button>
+<div class="card"><div class="section">Gestión de datos</div><div class="backup">
+<button class="btn light" id="backup">Guardar copia de seguridad</button>
+<button class="btn light" id="restore">Restaurar desde una copia</button>
+<button class="btn light" id="clear">Borrar todos los datos</button>
 <input id="file" type="file" accept=".json,application/json" class="hidden">
-</div><div class="status">バックアップはJSONファイルとして保存できます。iPhoneを変更する前などに保存してください。</div></div>
+</div><div class="status">Puede guardar una copia de seguridad como archivo JSON. Se recomienda hacerlo antes de cambiar de iPhone.</div></div>
 </main>
 
 <main id="annualView" class="hidden">
-<div class="card"><div class="section">年間集計</div><div class="fy" id="annualFY"></div>
-<table><thead><tr><th>月</th><th>実績</th><th>繰越込み</th><th>次月繰越</th></tr></thead><tbody id="annualRows"></tbody><tfoot><tr><td colspan="3">年間実績</td><td id="annualTotal">0:00</td></tr></tfoot></table><div class="note">各月の実績のうち1時間未満の端数を次月へ繰り越します。繰越は実績時間に二重計上されません。</div></div>
-<button class="btn" style="width:100%" id="back">月別画面に戻る</button>
+<div class="card"><div class="section">Resumen anual</div><div class="fy" id="annualFY"></div>
+<table><thead><tr><th>Mes</th><th>Registradas</th><th>Con saldo</th><th>Saldo siguiente</th></tr></thead><tbody id="annualRows"></tbody><tfoot><tr><td colspan="3">Total anual</td><td id="annualTotal">0:00</td></tr></tfoot></table><div class="note">Los minutos que queden por debajo de una hora se trasladan al mes siguiente. El saldo trasladado no se cuenta dos veces en el total de horas registradas.</div></div>
+<button class="btn" style="width:100%" id="back">Volver a la vista mensual</button>
 </main>
 </div>
 
@@ -70,6 +70,37 @@ const months=[9,10,11,12,1,2,3,4,5,6,7,8];
 let editId=null;
 let state={fyStart:(new Date().getMonth()>=8?new Date().getFullYear():new Date().getFullYear()-1),records:{},page:0};
 
+const LANG_KEY="service_hours_language";
+let lang=localStorage.getItem(LANG_KEY)||"es";
+const T={
+ es:{title:"Horas de servicio",annual:"Resumen anual",fy:"Año de servicio",thisMonth:"Horas de servicio de este mes (con saldo trasladado)",carry:"Saldo trasladado del mes anterior",next:"Saldo para el mes siguiente",registered:"Horas registradas este mes",whole:"Horas completas",notesHint:"Las revisitas y los cursos bíblicos se registran en las notas",days:" días registrados",service:"Registrar servicio",date:"Fecha",serviceHours:"Horas de servicio",hours:"horas",minutes:"minutos",rv:"Nota de revisita (con quién y de qué hablaron)",bible:"Nota del curso bíblico (con quién y de qué hablaron)",rvPh:"Ej.: Hablé con el Sr. Tanaka sobre sus preocupaciones familiares.",biblePh:"Ej.: Estudié la lección 12 con el Sr. Sato. Hablamos sobre la oración.",register:"Registrar",cancel:"Cancelar edición",hint:"En el iPhone puede usar solo el teclado numérico. Introduzca, por ejemplo, 2 horas y 30 minutos. Las revisitas y los cursos bíblicos permiten anotar con quién habló y de qué hablaron. Los minutos que queden por debajo de una hora se trasladan al mes siguiente.",records:"Registros de este mes",edit:"Editar",delete:"Eliminar",rvShort:"Revisita",bibleShort:"Curso bíblico",empty:"Todavía no hay registros.",data:"Gestión de datos",backup:"Guardar copia de seguridad",restore:"Restaurar desde una copia",clear:"Borrar todos los datos",status:"Puede guardar una copia de seguridad como archivo JSON. Se recomienda hacerlo antes de cambiar de iPhone.",annualTitle:"Resumen anual",month:"Mes",registered:"Registradas",withCarry:"Con saldo",nextCarry:"Saldo siguiente",annualTotal:"Total anual",annualHint:"Los minutos que queden por debajo de una hora se trasladan al mes siguiente. El saldo trasladado no se cuenta dos veces en el total de horas registradas.",back:"Volver a la vista mensual",saveChanges:"Guardar cambios",editMode:"Modo de edición: cambie los datos y pulse «Guardar cambios».",invalid:"Introduzca las horas y los minutos de servicio (los minutos deben ser de 0 a 59).",wrongMonth:"Seleccione una fecha del mes que está viendo.",saved:"✓ Guardado",changesSaved:"✓ Cambios guardados",notSaved:"No se pudo guardar",cancelled:"Edición cancelada",deleted:"Eliminado",restored:"✓ Restaurado",backupCreated:"Copia de seguridad creada",cleared:"Todos los registros se borraron.",restoreConfirm:"Los datos actuales se reemplazarán por los de la copia de seguridad. ¿Desea continuar?",clearConfirm:"Se borrarán todos los registros de servicio. Esta acción no se puede deshacer.",readError:"No se pudo leer el archivo de copia de seguridad."},
+ ja:{title:"奉仕時間",annual:"年間集計",fy:"奉仕年度",thisMonth:"今月の奉仕時間（繰越込み）",carry:"前月からの繰越",next:"次月への繰越",registered:"今月の実績",whole:"1時間単位",notesHint:"再訪問と聖書レッスンはメモに記録します",days:"日を記録",service:"奉仕を記録",date:"日付",serviceHours:"奉仕時間",hours:"時間",minutes:"分",rv:"再訪問メモ（誰と何を話したか）",bible:"聖書レッスンメモ（誰と何を話したか）",rvPh:"例：田中さんと家族について話した。",biblePh:"例：佐藤さんと12課を研究した。祈りについて話した。",register:"記録する",cancel:"編集をキャンセル",hint:"iPhoneでは数字キーボードだけで入力できます。例：2時間30分。再訪問と聖書レッスンは、誰と何を話したかをメモできます。1時間未満の端数は翌月に繰り越されます。",records:"今月の記録",edit:"編集",delete:"削除",rvShort:"再訪問",bibleShort:"聖書レッスン",empty:"まだ記録がありません。",data:"データ管理",backup:"バックアップを保存",restore:"バックアップから復元",clear:"全データを消去",status:"バックアップをJSONファイルとして保存できます。iPhoneを変更する前などに保存してください。",annualTitle:"年間集計",month:"月",registered:"実績",withCarry:"繰越込み",nextCarry:"次月繰越",annualTotal:"年間合計",annualHint:"1時間未満の端数は翌月に繰り越されます。繰越時間を年間合計に二重計上しません。",back:"月別画面に戻る",saveChanges:"変更を保存",editMode:"編集モード：内容を変更して「変更を保存」を押してください。",invalid:"奉仕時間を入力してください。分は0〜59で入力します。",wrongMonth:"表示中の月の日付を選んでください。",saved:"✓ 保存しました",changesSaved:"✓ 変更を保存しました",notSaved:"保存できませんでした",cancelled:"編集をキャンセルしました",deleted:"削除しました",restored:"✓ 復元しました",backupCreated:"バックアップを作成しました",cleared:"すべての記録を消去しました。",restoreConfirm:"現在のデータをバックアップの内容で置き換えます。よろしいですか？",clearConfirm:"すべての奉仕記録を消去します。この操作は元に戻せません。",readError:"バックアップファイルを読み込めませんでした。"}
+};
+function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k}
+function monthLabel(m){return lang==='ja'?m+'月':m+'月'}
+function applyLanguage(){
+ document.documentElement.lang=lang==='ja'?'ja':'es';
+ document.getElementById('appTitle').textContent=t('title');
+ document.getElementById('annual').textContent=t('annual');
+ document.getElementById('langBtn').textContent=lang==='ja'?'Español':'日本語';
+ document.getElementById('date').previousElementSibling.textContent=t('date');
+ document.querySelector('label[for="rvNote"]').textContent=t('rv');
+ document.querySelector('label[for="bibleNote"]').textContent=t('bible');
+ document.querySelector('#rvNote').placeholder=t('rvPh'); document.querySelector('#bibleNote').placeholder=t('biblePh');
+ document.querySelector('.time-input label').textContent=t('serviceHours');
+ document.querySelectorAll('.time-parts span')[0].textContent=t('hours'); document.querySelectorAll('.time-parts span')[1].textContent=t('minutes');
+ document.querySelector('#monthView .total small').textContent=t('thisMonth');
+ document.querySelector('#monthView .card:nth-of-type(3) .section').textContent=t('service');
+ document.querySelector('#monthView .card:nth-of-type(4) .section').textContent=t('records');
+ document.querySelector('#monthView .card:nth-of-type(5) .section').textContent=t('data');
+ document.getElementById('backup').textContent=t('backup'); document.getElementById('restore').textContent=t('restore'); document.getElementById('clear').textContent=t('clear');
+ document.querySelector('#monthView .note').textContent=t('hint'); document.querySelector('.status').textContent=t('status');
+ document.querySelector('#annualView .section').textContent=t('annualTitle');
+ document.querySelector('#annualView thead th:nth-child(1)').textContent=t('month'); document.querySelector('#annualView thead th:nth-child(2)').textContent=t('registered'); document.querySelector('#annualView thead th:nth-child(3)').textContent=t('withCarry'); document.querySelector('#annualView thead th:nth-child(4)').textContent=t('nextCarry');
+ document.querySelector('#annualView tfoot td').textContent=t('annualTotal'); document.querySelector('#annualView .note').textContent=t('annualHint'); document.getElementById('back').textContent=t('back');
+ if(!editId)document.getElementById('add').textContent=t('register'); document.getElementById('cancelEdit').textContent=t('cancel');
+ render();
+}
 function load(){
  try{
   const x=localStorage.getItem(STORE);
@@ -104,23 +135,23 @@ function monthlyInfo(i){
 }
 function render(){
  const k=key(state.page), list=(state.records[k]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
- document.getElementById("fy").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
- document.getElementById("month").textContent=Number(k.slice(5))+"月";
+ document.getElementById("fy").textContent=`${state.fyStart}–${state.fyStart+1}`;
+ document.getElementById("month").textContent=monthLabel(Number(k.slice(5)));
  const info=monthlyInfo(state.page);
  document.getElementById("total").textContent=fmt(info.total);
- document.getElementById("carryInfo").textContent=`前月からの繰越 ${fmt(info.carry)} ／ 次月へ繰越 ${fmt(info.nextCarry)}`;
- document.getElementById("actualInfo").textContent=`今月の実績 ${fmt(info.actual)} ／ 1時間単位の時間 ${fmt(info.whole)}`;
- document.getElementById("stats").textContent="再訪問・研究はメモで記録";document.getElementById("count").textContent=list.length+"日記録";
+ document.getElementById("carryInfo").textContent=`${t("carry")} ${fmt(info.carry)} ／ ${t("next")} ${fmt(info.nextCarry)}`;
+ document.getElementById("actualInfo").textContent=`${t("registered")} ${fmt(info.actual)} ／ ${t("whole")} ${fmt(info.whole)}`;
+ document.getElementById("stats").textContent=t("notesHint");document.getElementById("count").textContent=list.length+t("days");
  const today=new Date();
  const todayKey=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
  if(!editId){
   document.getElementById("date").value=(todayKey===k)?today.toISOString().slice(0,10):k+"-01";
   document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";
-  document.getElementById("add").textContent="記録する";
+  document.getElementById("add").textContent=t("register");
   document.getElementById("cancelEdit").classList.add("hidden");
  }
- document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">奉仕時間 ${fmt(r.minutes)}</div></div><div class="actions"><button class="edit" data-id="${r.id}">編集</button><button class="del" data-id="${r.id}">削除</button></div><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>再訪問</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>研究</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">まだ記録がありません。</div>';
- document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(editId===b.dataset.id){editId=null;}state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash("削除しました")});
+ document.getElementById("records").innerHTML=list.length?list.map(r=>`<div class="row"><div><strong>${r.date.slice(5).replace("-","/")}</strong><div class="sub">${t("serviceHours")} ${fmt(r.minutes)}</div></div><div class="actions"><button class="edit" data-id="${r.id}">${t("edit")}</button><button class="del" data-id="${r.id}">${t("delete")}</button></div><div class="record-notes">${r.rvNote?`<div class="record-note"><strong>${t("rvShort")}</strong>${escapeHtml(r.rvNote).replace(/\n/g,"<br>")}</div>`:""}${r.bibleNote?`<div class="record-note"><strong>${t("bibleShort")}</strong>${escapeHtml(r.bibleNote).replace(/\n/g,"<br>")}</div>`:""}</div></div>`).join(""):'<div class="empty">Todavía no hay registros.</div>';
+ document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(editId===b.dataset.id){editId=null;}state.records[k]=state.records[k].filter(r=>String(r.id)!==b.dataset.id);save();render();flash(t("deleted"))});
  document.querySelectorAll(".edit").forEach(b=>b.onclick=()=>startEdit(b.dataset.id));
 }
 function startEdit(id){
@@ -132,9 +163,9 @@ function startEdit(id){
  document.getElementById("minutesPart").value=r.minutes%60;
  document.getElementById("rvNote").value=r.rvNote||"";
  document.getElementById("bibleNote").value=r.bibleNote||"";
- document.getElementById("add").textContent="変更を保存";
+ document.getElementById("add").textContent=t("saveChanges");
  document.getElementById("cancelEdit").classList.remove("hidden");
- document.getElementById("msg").textContent="編集モード：内容を変更して「変更を保存」を押してください";
+ document.getElementById("msg").textContent=t("editMode");
  window.scrollTo({top:0,behavior:"smooth"});
 }
 document.getElementById("add").onclick=()=>{
@@ -143,23 +174,23 @@ document.getElementById("add").onclick=()=>{
  const hours=h===""?null:Number(h), mins=m===""?null:Number(m);
  const minutes=(Number.isInteger(hours)&&hours>=0&&Number.isInteger(mins)&&mins>=0&&mins<=59)?hours*60+mins:null;
  const rvNote=document.getElementById("rvNote").value.trim(), bibleNote=document.getElementById("bibleNote").value.trim();
- if(!date||minutes===null){flash("奉仕時間は「時間」と「分」を入力してください（分は0〜59）");return}
- const k=key(state.page);if(date.slice(0,7)!==k){flash("表示中の月の日付を選んでください");return}
+ if(!date||minutes===null){flash(t("invalid"));return}
+ const k=key(state.page);if(date.slice(0,7)!==k){flash(t("wrongMonth"));return}
  if(editId){
    const r=(state.records[k]||[]).find(x=>String(x.id)===String(editId));
    if(!r){editId=null;render();return}
    r.date=date;r.minutes=minutes;r.rvNote=rvNote;r.bibleNote=bibleNote;
-   if(save()){editId=null;render();flash("✓ 変更を保存しました")}else flash("保存できませんでした")
+   if(save()){editId=null;render();flash(t("changesSaved"))}else flash(t("notSaved"))
  }else{
    if(!state.records[k])state.records[k]=[];
    state.records[k].push({id:Date.now()+Math.random(),date,minutes,rvNote,bibleNote});
-   if(save()){document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";render();flash("✓ 保存しました")}else flash("保存できませんでした")
+   if(save()){document.getElementById("hours").value="";document.getElementById("minutesPart").value="";document.getElementById("rvNote").value="";document.getElementById("bibleNote").value="";render();flash(t("saved"))}else flash(t("notSaved"))
  }
 };
 document.getElementById("cancelEdit").onclick=()=>{
  editId=null;
  render();
- flash("編集をキャンセルしました");
+ flash(t("cancelled"));
 };
 
 document.getElementById("prev").onclick=()=>{if(state.page>0){state.page--;render()}};
@@ -167,29 +198,30 @@ document.getElementById("next").onclick=()=>{if(state.page<11){state.page++;rend
 
 document.getElementById("annual").onclick=()=>{
  document.getElementById("monthView").classList.add("hidden");document.getElementById("annualView").classList.remove("hidden");
- document.getElementById("annualFY").textContent=`${state.fyStart}年9月〜${state.fyStart+1}年8月`;
- let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const info=monthlyInfo(i);total+=info.actual;return `<tr><td>${m}月</td><td>${fmt(info.actual)}</td><td>${fmt(info.total)}</td><td>${fmt(info.nextCarry)}</td></tr>`}).join("");
+ document.getElementById("annualFY").textContent=`${state.fyStart}–${state.fyStart+1}`;
+ let total=0;document.getElementById("annualRows").innerHTML=months.map((m,i)=>{const info=monthlyInfo(i);total+=info.actual;return `<tr><td>${monthLabel(m)}</td><td>${fmt(info.actual)}</td><td>${fmt(info.total)}</td><td>${fmt(info.nextCarry)}</td></tr>`}).join("");
  document.getElementById("annualTotal").textContent=fmt(total)
 };
 document.getElementById("back").onclick=()=>{document.getElementById("annualView").classList.add("hidden");document.getElementById("monthView").classList.remove("hidden");render()};
 
 document.getElementById("backup").onclick=()=>{
- const blob=new Blob([JSON.stringify({app:"奉仕時間記録",version:6,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`奉仕記録バックアップ_${state.fyStart}-${state.fyStart+1}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash("バックアップを作成しました")
+ const blob=new Blob([JSON.stringify({app:"Horas de servicio",version:6,savedAt:new Date().toISOString(),data:state},null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`copia_seguridad_horas_${state.fyStart}-${state.fyStart+1}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash(t("backupCreated"))
 };
 document.getElementById("restore").onclick=()=>document.getElementById("file").click();
 document.getElementById("file").onchange=e=>{
  const f=e.target.files[0];if(!f)return;const reader=new FileReader();
  reader.onload=()=>{
-  try{const x=JSON.parse(reader.result);const d=x.data||x;if(!d.records)throw new Error();if(!confirm("現在のデータをバックアップの内容で置き換えます。よろしいですか？"))return;state=d;Object.values(state.records||{}).forEach(list=>list.forEach(r=>{r.rvNote=typeof r.rvNote==='string'?r.rvNote:'';r.bibleNote=typeof r.bibleNote==='string'?r.bibleNote:'';}));save();render();flash("✓ 復元しました")}catch(err){alert("バックアップファイルを読み込めませんでした。")}
+  try{const x=JSON.parse(reader.result);const d=x.data||x;if(!d.records)throw new Error();if(!confirm(t("restoreConfirm")))return;state=d;Object.values(state.records||{}).forEach(list=>list.forEach(r=>{r.rvNote=typeof r.rvNote==='string'?r.rvNote:'';r.bibleNote=typeof r.bibleNote==='string'?r.bibleNote:'';}));save();render();flash(t("restored"))}catch(err){alert(t("readError"))}
   e.target.value=""
  };reader.readAsText(f)
 };
 document.getElementById("clear").onclick=()=>{
- if(confirm("すべての奉仕記録を消去します。この操作は元に戻せません。")){state.records={};save();render();flash("すべての記録を消去しました")}
+ if(confirm(t("clearConfirm"))){state.records={};save();render();flash(t("cleared"))}
 };
 load();
-// 起動時は現在の奉仕年度の「今月」を表示する
+document.getElementById("langBtn").onclick=()=>{lang=lang==="ja"?"es":"ja";localStorage.setItem(LANG_KEY,lang);applyLanguage();};
+// Al iniciar, mostrar el mes actual del año de servicio
 const now=new Date();
 const currentFyStart=(now.getMonth()>=8?now.getFullYear():now.getFullYear()-1);
 if(state.fyStart===currentFyStart){
@@ -197,7 +229,7 @@ if(state.fyStart===currentFyStart){
  const idx=months.indexOf(currentMonth);
  if(idx>=0)state.page=idx;
 }
-render();
+applyLanguage();
 </script>
 </body>
 </html>
